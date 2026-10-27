@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Teambeheer</title>
+<style>
+  :root {
+    --pitch: #1c3d2e;
+    --pitch-mid: #2f5a45;
+    --chalk: #f6f3ea;
+    --paper: #fffdf8;
+    --amber: #c78a2e;
+    --amber-dark: #8f5f18;
+    --red: #a13c33;
+    --ink: #1a231d;
+    --ink-soft: #5b6459;
+    --line: #ddd9cb;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--chalk); color: var(--ink); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  #app { max-width: 960px; margin: 0 auto; padding: 20px 16px 70px; }
+  h1, h2, h3 { margin: 0; }
+  .ts-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+  .ts-title { font-size: 24px; font-weight: 800; color: var(--pitch); }
+  .ts-title span { color: var(--amber-dark); }
+  .ts-topbtns { display: flex; gap: 8px; flex-wrap: wrap; }
+  .ts-btn { border: 1px solid var(--pitch); background: var(--pitch); color: #fff; border-radius: 6px; padding: 8px 14px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .ts-btn:hover { background: var(--pitch-mid); }
+  .ts-btn.secondary { background: #fff; color: var(--pitch); border-color: var(--line); }
+  .ts-btn.secondary:hover { background: var(--chalk); }
+  .ts-btn.danger { background: #fff; color: var(--red); border-color: var(--red); }
+  .ts-btn.danger:hover { background: #fbecea; }
+  .ts-btn.small { padding: 5px 10px; font-size: 12px; }
+  .ts-btn:disabled { opacity: .5; cursor: not-allowed; }
+  .ts-card { background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; margin-bottom: 14px; }
+  .ts-card h2 { font-size: 15px; margin-bottom: 12px; color: var(--pitch); font-weight: 700; }
+  .ts-card h3 { font-size: 13px; margin: 16px 0 8px; color: var(--pitch); font-weight: 700; }
+  .ts-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+  .ts-field { display: flex; flex-direction: column; gap: 4px; }
+  .ts-field label { font-size: 11px; color: var(--ink-soft); font-weight: 600; }
+  .ts-field input, .ts-field select, .ts-field textarea {
+    border: 1px solid var(--line); border-radius: 6px; padding: 7px 9px; font-size: 14px; background: #fff; color: var(--ink); font-family: inherit;
+  }
+  .ts-field input:focus, .ts-field select:focus, .ts-field textarea:focus { outline: 2px solid var(--pitch-mid); outline-offset: 1px; }
+  .ts-error { color: var(--red); font-size: 12px; margin-top: 8px; }
+  .ts-empty { text-align: center; color: var(--ink-soft); font-size: 13px; padding: 22px 10px; }
+  .ts-muted { color: var(--ink-soft); font-size: 12px; }
+  .ts-tabs { display: flex; gap: 4px; border-bottom: 2px solid var(--line); margin-bottom: 20px; flex-wrap: wrap; }
+  .ts-tab { border: none; background: none; padding: 10px 14px; font-size: 14px; font-weight: 600; color: var(--ink-soft); cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; }
+  .ts-tab.active { color: var(--pitch); border-bottom-color: var(--amber); }
+  .ts-seasonbar { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  .ts-seasonbar select { border: 1px solid var(--line); border-radius: 6px; padding: 6px 9px; font-size: 14px; font-weight: 600; color: var(--pitch); background: #fff; }
+  .ts-season-row { display: flex; align-items: center; gap: 10px; padding: 10px 4px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .ts-season-row:last-child { border-bottom: none; }
+  .ts-season-name { font-weight: 700; font-size: 15px; color: var(--pitch); flex: 1; min-width: 120px; }
+  .ts-players { display: flex; flex-direction: column; gap: 8px; }
+  .ts-player { border-bottom: 1px solid var(--line); padding: 9px 4px; }
+  .ts-player:last-child { border-bottom: none; }
+  .ts-player-top { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; cursor: pointer; }
+  .ts-badge { width: 32px; height: 32px; border-radius: 50%; background: var(--pitch); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+  .ts-player-name { font-weight: 600; font-size: 14px; flex: 1; min-width: 90px; }
+  .ts-player-meta { font-size: 12px; color: var(--ink-soft); display: flex; gap: 10px; flex-wrap: wrap; }
+  .ts-player-notes { margin-top: 10px; padding-left: 44px; }
+  .ts-note { background: var(--chalk); border-radius: 6px; padding: 8px 10px; font-size: 13px; margin-bottom: 6px; display: flex; justify-content: space-between; gap: 10px; align-items: start; }
+  .ts-note-date { font-size: 11px; color: var(--ink-soft); white-space: nowrap; }
+  .ts-match, .ts-training { border: 1px solid var(--line); border-radius: 10px; margin-bottom: 10px; overflow: hidden; background: var(--paper); }
+  .ts-match-head, .ts-training-head { display: flex; align-items: center; gap: 12px; padding: 12px 14px; cursor: pointer; flex-wrap: wrap; }
+  .ts-match-head:hover, .ts-training-head:hover { background: var(--chalk); }
+  .ts-score { font-weight: 800; font-size: 16px; color: var(--pitch); min-width: 54px; text-align: center; }
+  .ts-opponent { font-weight: 600; font-size: 14px; flex: 1; }
+  .ts-date { font-size: 12px; color: var(--ink-soft); min-width: 88px; }
+  .ts-tag { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 5px; }
+  .ts-tag.win { background: #e4efe1; color: #2f5f27; }
+  .ts-tag.loss { background: #f6e4e2; color: var(--red); }
+  .ts-tag.draw { background: #efe9da; color: var(--amber-dark); }
+  .ts-body { padding: 6px 14px 16px; border-top: 1px solid var(--line); }
+  .ts-attend-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .ts-attend-row:last-child { border-bottom: none; }
+  .ts-attend-name { font-size: 13px; font-weight: 600; flex: 1; min-width: 120px; }
+  .ts-check-label { display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; }
+  .ts-starter-row label { font-size: 13px; display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 4px 0; }
+  .ts-sub-row, .ts-block-row { display: grid; grid-template-columns: 70px 1fr 1fr auto; gap: 8px; align-items: end; margin-bottom: 8px; }
+  .ts-block-row { grid-template-columns: 90px 1fr auto; }
+  .ts-stat-table, .ts-full-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .ts-stat-table th, .ts-full-table th { text-align: left; font-size: 11px; color: var(--ink-soft); font-weight: 600; padding: 6px 6px; border-bottom: 1px solid var(--line); }
+  .ts-full-table th { font-weight: 700; border-bottom: 2px solid var(--line); cursor: pointer; user-select: none; }
+  .ts-full-table th.active { color: var(--pitch); }
+  .ts-stat-table td, .ts-full-table td { padding: 5px 6px; border-bottom: 1px solid var(--line); }
+  .ts-stat-table input { width: 56px; border: 1px solid var(--line); border-radius: 5px; padding: 4px 6px; font-size: 13px; }
+  .ts-num { text-align: right; }
+  .ts-chev { color: var(--ink-soft); font-size: 12px; }
+  .ts-absent-pill { font-size: 11px; background: #f6e4e2; color: var(--red); padding: 2px 7px; border-radius: 5px; font-weight: 600; }
+  .ts-lead-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+  .ts-lead-item { display: flex; justify-content: space-between; font-size: 13px; padding: 5px 0; border-bottom: 1px solid var(--line); }
+  .ts-lead-item:last-child { border-bottom: none; }
+  .ts-lead-val { color: var(--amber-dark); font-weight: 700; }
+  .ts-cal { width: 100%; border-collapse: collapse; }
+  .ts-cal th { font-size: 11px; color: var(--ink-soft); padding: 4px; font-weight: 600; }
+  .ts-cal td { text-align: center; padding: 2px; }
+  .ts-cal-day { width: 100%; aspect-ratio: 1; border: 1px solid var(--line); border-radius: 6px; background: #fff; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; position: relative; }
+  .ts-cal-day:hover { background: var(--chalk); }
+  .ts-cal-day.has-training { background: var(--pitch); color: #fff; font-weight: 700; }
+  .ts-cal-day.empty { visibility: hidden; cursor: default; }
+  .ts-cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .ts-cal-nav strong { color: var(--pitch); font-size: 15px; }
+  .ts-upcoming { background: var(--pitch); color: #fff; border-radius: 10px; padding: 14px 18px; margin-bottom: 14px; }
+  .ts-upcoming h3 { color: #fff; margin: 0 0 6px; }
+  .ts-upcoming .ts-muted { color: #cfe0d6; }
+  .ts-save-note { font-size: 12px; color: var(--ink-soft); }
+  @media (max-width: 560px) {
+    .ts-lead-grid { grid-template-columns: 1fr; }
+    .ts-sub-row { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<input type="file" id="importFile" accept="application/json" style="display:none">
+<script>
+(function () {
+  "use strict";
+
+  var STORAGE_KEY = "teambeheer-data-v1";
+  var ABSENCE_REASONS = ["Blessure", "Speelt mee met ander team", "Anders"];
+
+  // ---------- helpers ----------
+  function uid() { return Math.random().toString(36).slice(2, 10); }
+  function todayISO() { return new Date().toISOString().slice(0, 10); }
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function formatDateLabel(iso) {
+    if (!iso) return "";
+    var d = new Date(iso + "T00:00:00");
+    if (isNaN(d.getTime())) return iso;
+    return d.toLocaleDateString("nl-NL", { day: "numeric", month: "short", year: "numeric" });
+  }
+  function resultBadge(us, them) {
+    if (us > them) return { label: "W", tone: "win" };
+    if (us < them) return { label: "V", tone: "loss" };
+    return { label: "G", tone: "draw" };
+  }
+  function addMinutesToTime(hhmm, add) {
+    var parts = (hhmm || "00:00").split(":");
+    var total = (parseInt(parts[0], 10) || 0) * 60 + (parseInt(parts[1], 10) || 0) + add;
+    total = ((total % 1440) + 1440) % 1440;
+    var h = Math.floor(total / 60), m = total % 60;
+    return (h < 10 ? "0" + h : h) + ":" + (m < 10 ? "0" + m : m);
+  }
+  function isPresent(entity, playerId) {
+    var a = entity.attendance && entity.attendance[playerId];
+    return !a || a.present !== false;
+  }
+  function absenceInfo(entity, playerId) {
+    var a = entity.attendance && entity.attendance[playerId];
+    if (!a || a.present !== false) return null;
+    return { reason: a.reason || "", customReason: a.customReason || "" };
+  }
+  function computeMatchMinutes(match) {
+    var duration = Number(match.duration) > 0 ? Number(match.duration) : 90;
+    var entry = {};
+    var minutes = {};
+    (match.starters || []).forEach(function (pid) { entry[pid] = 0; });
+    var subs = (match.subs || []).map(function (s) {
+      return { playerOut: s.playerOut, playerIn: s.playerIn, minute: Math.min(Math.max(Number(s.minute) || 0, 0), duration) };
+    }).sort(function (a, b) { return a.minute - b.minute; });
+    subs.forEach(function (s) {
+      if (s.playerOut && entry.hasOwnProperty(s.playerOut)) {
+        minutes[s.playerOut] = (minutes[s.playerOut] || 0) + (s.minute - entry[s.playerOut]);
+        delete entry[s.playerOut];
+      }
+      if (s.playerIn) entry[s.playerIn] = s.minute;
+    });
+    Object.keys(entry).forEach(function (pid) {
+      minutes[pid] = (minutes[pid] || 0) + (duration - entry[pid]);
+    });
+    return minutes;
+  }
+
+  // ---------- state ----------
+  var state = loadState();
+  var ui = { tab: "team", openMatchId: null, openTrainingId: null, calYear: null, calMonth: null,
+             showNewSeason: false, showNewMatch: false, showNewTraining: false, openPlayerId: null,
+             errors: {} };
+
+  function loadState() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        var parsed = JSON.parse(raw);
+        if (parsed && Array.isArray(parsed.seasons)) return parsed;
+      }
+    } catch (e) {}
+    return { seasons: [], activeSeasonId: null };
+  }
+  var saveTimer = null;
+  var saveNote = "";
+  function persist() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      saveNote = "Opgeslagen op dit apparaat";
+    } catch (e) {
+      saveNote = "Opslaan mislukt (opslagruimte vol of niet beschikbaar)";
+    }
+  }
+
+  function activeSeason() {
+    return state.seasons.find(function (s) { return s.id === state.activeSeasonId; }) || null;
+  }
+
+  // ---------- season aggregates ----------
+  function seasonStats(season) {
+    var map = {};
+    season.players.forEach(function (p) {
+      map[p.id] = { playerId: p.id, name: p.name, number: p.number, minutes: 0, goals: 0, assists: 0,
+                    matches: 0, matchAbsent: 0, trainings: 0, trainingAbsent: 0 };
+    });
+    season.matches.forEach(function (m) {
+      var mins = computeMatchMinutes(m);
+      season.players.forEach(function (p) {
+        var row = map[p.id]; if (!row) return;
+        var mm = mins[p.id] || 0;
+        row.minutes += mm;
+        if (mm > 0) row.matches += 1;
+        var ga = (m.goalsAssists && m.goalsAssists[p.id]) || {};
+        row.goals += Number(ga.goals) || 0;
+        row.assists += Number(ga.assists) || 0;
+        if (!isPresent(m, p.id)) row.matchAbsent += 1;
+      });
+    });
+    season.trainings.forEach(function (t) {
+      season.players.forEach(function (p) {
+        var row = map[p.id]; if (!row) return;
+        if (isPresent(t, p.id)) row.trainings += 1;
+        else row.trainingAbsent += 1;
+      });
+    });
+    return Object.keys(map).map(function (k) { return map[k]; });
+  }
+
+  // ---------- rendering ----------
+  var app = document.getElementById("app");
+
+  function render() {
+    if (!state.activeSeasonId || !activeSeason()) {
+      app.innerHTML = renderSeasonList();
+    } else {
+      app.innerHTML = renderSeasonDetail(activeSeason());
+    }
+  }
+
+  function renderSeasonList() {
+    var html = "";
+    html += '<div class="ts-header"><h1 class="ts-title">Team<span>beheer</span></h1>';
+    html += '<div class="ts-topbtns">';
+    html += '<button class="ts-btn secondary small" data-act="exportBackup">Backup downloaden</button>';
+    html += '<button class="ts-btn secondary small" data-act="importBackup">Backup importeren</button>';
+    html += "</div></div>";
+
+    html += '<div class="ts-card"><h2>Nieuw seizoen</h2>';
+    if (ui.showNewSeason) {
+      html += '<div class="ts-row">';
+      html += '<div class="ts-field" style="flex:1;min-width:160px"><label>Naam</label><input id="newSeasonName" type="text" placeholder="bijv. 2025-2026"></div>';
+      html += '<button class="ts-btn" data-act="createSeason">Aanmaken</button>';
+      html += '<button class="ts-btn secondary" data-act="cancelNewSeason">Annuleren</button>';
+      html += "</div>";
+      if (ui.errors.season) html += '<div class="ts-error">' + esc(ui.errors.season) + "</div>";
+    } else {
+      html += '<button class="ts-btn secondary" data-act="openNewSeason">+ Seizoen toevoegen</button>';
+    }
+    html += "</div>";
+
+    html += '<div class="ts-card"><h2>Seizoenen</h2>';
+    if (state.seasons.length === 0) {
+      html += '<div class="ts-empty">Nog geen seizoenen aangemaakt.</div>';
+    } else {
+      state.seasons.slice().sort(function (a, b) { return (b.createdAt || "").localeCompare(a.createdAt || ""); }).forEach(function (s) {
+        html += '<div class="ts-season-row">';
+        html += '<span class="ts-season-name">' + esc(s.name) + "</span>";
+        html += '<span class="ts-muted">' + s.players.length + " spelers · " + s.matches.length + " wedstr. · " + s.trainings.length + " trainingen</span>";
+        html += '<button class="ts-btn small" data-act="openSeason" data-payload=\'{"id":"' + s.id + '"}\'>Openen</button>';
+        html += '<button class="ts-btn secondary small" data-act="renameSeason" data-payload=\'{"id":"' + s.id + '"}\'>Hernoemen</button>';
+        html += '<button class="ts-btn danger small" data-act="deleteSeason" data-payload=\'{"id":"' + s.id + '"}\'>Verwijderen</button>';
+        html += "</div>";
+      });
+    }
+    html += "</div>";
+    return html;
+  }
+
+  function renderSeasonDetail(season) {
+    var html = "";
+    html += '<div class="ts-header"><h1 class="ts-title">Team<span>beheer</span></h1>';
+    html += '<div class="ts-topbtns">';
+    html += '<button class="ts-btn secondary small" data-act="exportBackup">Backup downloaden</button>';
+    html += '<span class="ts-save-note">' + esc(saveNote) + "</span>";
+    html += "</div></div>";
+
+    html += '<div class="ts-seasonbar">';
+    html += '<button class="ts-btn secondary small" data-act="backToSeasons">&larr; Alle seizoenen</button>';
+    html += '<select data-bind=\'{"type":"switchSeason"}\'>';
+    state.seasons.forEach(function (s) {
+      html += '<option value="' + s.id + '"' + (s.id === season.id ? " selected" : "") + ">" + esc(s.name) + "</option>";
+    });
+    html += "</select></div>";
+
+    html += '<div class="ts-tabs">';
+    [["team", "Team"], ["wedstrijden", "Wedstrijden"], ["trainingen", "Trainingen"], ["statistieken", "Statistieken"]].forEach(function (t) {
+      html += '<button class="ts-tab ' + (ui.tab === t[0] ? "active" : "") + '" data-act="setTab" data-payload=\'{"tab":"' + t[0] + '"}\'>' + t[1] + "</button>";
+    });
+    html += "</div>";
+
+    if (ui.tab === "team") html += renderTeamTab(season);
+    else if (ui.tab === "wedstrijden") html += renderWedstrijdenTab(season);
+    else if (ui.tab === "trainingen") html += renderTrainingenTab(season);
+    else html += renderStatistiekenTab(season);
+
+    return html;
+  }
+
+  function renderTeamTab(season) {
+    var stats = {};
+    seasonStats(season).forEach(function (s) { stats[s.playerId] = s; });
+    var sorted = season.players.slice().sort(function (a, b) {
+      var an = Number(a.number), bn = Number(b.number);
+      if (a.number !== "" && b.number !== "" && !isNaN(an) && !isNaN(bn)) return an - bn;
+      return a.name.localeCompare(b.name);
+    });
+
+    var html = "";
+    html += '<div class="ts-card"><h2>Speler toevoegen</h2>';
+    html += '<div class="ts-row">';
+    html += '<div class="ts-field"><label>Rugnummer</label><input id="newPlayerNum" type="text" inputmode="numeric" style="width:70px" placeholder="9"></div>';
+    html += '<div class="ts-field" style="flex:1;min-width:160px"><label>Naam</label><input id="newPlayerName" type="text" placeholder="Voor- en achternaam"></div>';
+    html += '<button class="ts-btn" data-act="addPlayer">Toevoegen</button>';
+    html += "</div>";
+    if (ui.errors.player) html += '<div class="ts-error">' + esc(ui.errors.player) + "</div>";
+    html += "</div>";
+
+    html += '<div class="ts-card"><h2>Spelerslijst (' + season.players.length + ")</h2>";
+    if (sorted.length === 0) html += '<div class="ts-empty">Nog geen spelers toegevoegd.</div>';
+    html += '<div class="ts-players">';
+    sorted.forEach(function (p) {
+      var s = stats[p.id] || {};
+      var open = ui.openPlayerId === p.id;
+      html += '<div class="ts-player">';
+      html += '<div class="ts-player-top" data-act="togglePlayer" data-payload=\'{"id":"' + p.id + '"}\'>';
+      html += '<span class="ts-chev">' + (open ? "&#9662;" : "&#9656;") + "</span>";
+      html += '<div class="ts-badge">' + esc(p.number || "-") + "</div>";
+      html += '<div class="ts-player-name">' + esc(p.name) + "</div>";
+      html += '<div class="ts-player-meta"><span>' + (s.matches || 0) + " w.</span><span>" + (s.minutes || 0) + " min.</span><span>" + (s.goals || 0) + " doelp.</span><span>" + (s.assists || 0) + " assists</span><span>" + (s.trainings || 0) + " train.</span></div>";
+      html += '<button class="ts-btn danger small" data-act="removePlayer" data-payload=\'{"id":"' + p.id + '"}\'>Verwijder</button>';
+      html += "</div>";
+      if (open) {
+        html += '<div class="ts-player-notes">';
+        html += '<div class="ts-row" style="margin-bottom:8px">';
+        html += '<textarea id="noteText-' + p.id + '" rows="2" style="flex:1;min-width:200px" placeholder="Nieuwe notitie..."></textarea>';
+        html += '<button class="ts-btn small" data-act="addNote" data-payload=\'{"id":"' + p.id + '"}\'>Toevoegen</button>';
+        html += "</div>";
+        (p.notes || []).slice().reverse().forEach(function (n) {
+          html += '<div class="ts-note"><span>' + esc(n.text) + '</span><span class="ts-note-date">' + formatDateLabel(n.date) + ' <button type="button" data-act="removeNote" data-payload=\'{"playerId":"' + p.id + '","noteId":"' + n.id + '"}\' style="border:none;background:none;color:var(--red);margin-left:6px;cursor:pointer;font-size:13px;padding:0">&times;</button></span></div>';
+        });
+        if (!p.notes || p.notes.length === 0) html += '<div class="ts-muted">Nog geen notities.</div>';
+        html += "</div>";
+      }
+      html += "</div>";
+    });
+    html += "</div></div>";
+    return html;
+  }
+
+  function attendanceRows(entity, season, kind) {
+    var html = "";
+    season.players.forEach(function (p) {
+      var present = isPresent(entity, p.id);
+      var abs = absenceInfo(entity, p.id);
+      html += '<div class="ts-attend-row">';
+      html += '<span class="ts-attend-name">' + (p.number ? "#" + esc(p.number) + " " : "") + esc(p.name) + "</span>";
+      html += '<label class="ts-check-label"><input type="checkbox" ' + (present ? "checked" : "") + ' data-bind=\'{"type":"attendance","kind":"' + kind + '","entityId":"' + entity.id + '","playerId":"' + p.id + '"}\'> Aanwezig</label>';
+      if (!present) {
+        html += '<select data-bind=\'{"type":"attendanceReason","kind":"' + kind + '","entityId":"' + entity.id + '","playerId":"' + p.id + '"}\'>';
+        html += '<option value="">Kies reden...</option>';
+        ABSENCE_REASONS.forEach(function (r) {
+          html += '<option value="' + r + '"' + (abs && abs.reason === r ? " selected" : "") + ">" + r + "</option>";
+        });
+        html += "</select>";
+        if (abs && abs.reason === "Anders") {
+          html += '<input type="text" placeholder="Reden" value="' + esc(abs.customReason || "") + '" data-bind=\'{"type":"attendanceCustom","kind":"' + kind + '","entityId":"' + entity.id + '","playerId":"' + p.id + '"}\'>';
+        }
+        html += '<span class="ts-absent-pill">Afwezig</span>';
+      }
+      html += "</div>";
+    });
+    return html;
+  }
+
+  function renderWedstrijdenTab(season) {
+    var html = "";
+    html += '<div class="ts-card"><div class="ts-row" style="justify-content:space-between">';
+    html += '<h2 style="margin:0">Nieuwe wedstrijd</h2>';
+    html += '<button class="ts-btn secondary" data-act="toggleNewMatch">' + (ui.showNewMatch ? "Annuleren" : "Toevoegen") + "</button>";
+    html += "</div>";
+    if (ui.showNewMatch) {
+      html += '<div class="ts-row" style="margin-top:10px">';
+      html += '<div class="ts-field"><label>Datum</label><input id="newMatchDate" type="date" value="' + todayISO() + '"></div>';
+      html += '<div class="ts-field" style="flex:1;min-width:140px"><label>Tegenstander</label><input id="newMatchOpp" type="text" placeholder="Naam tegenstander"></div>';
+      html += '<div class="ts-field"><label>Doelp. wij</label><input id="newMatchUs" type="number" min="0" style="width:70px"></div>';
+      html += '<div class="ts-field"><label>Doelp. zij</label><input id="newMatchThem" type="number" min="0" style="width:70px"></div>';
+      html += '<button class="ts-btn" data-act="addMatch">Opslaan</button>';
+      html += "</div>";
+      if (ui.errors.match) html += '<div class="ts-error">' + esc(ui.errors.match) + "</div>";
+    }
+    html += "</div>";
+
+    var matches = season.matches.slice().sort(function (a, b) { return a.date < b.date ? 1 : -1; });
+    if (matches.length === 0) html += '<div class="ts-empty">Nog geen wedstrijden ingevoerd.</div>';
+    matches.forEach(function (m) { html += renderMatchCard(m, season); });
+    return html;
+  }
+
+  function renderMatchCard(m, season) {
+    var badge = resultBadge(m.scoreUs, m.scoreThem);
+    var open = ui.openMatchId === m.id;
+    var present = season.players.filter(function (p) { return isPresent(m, p.id); });
+    var mins = computeMatchMinutes(m);
+    var html = '<div class="ts-match">';
+    html += '<div class="ts-match-head" data-act="toggleMatch" data-payload=\'{"id":"' + m.id + '"}\'>';
+    html += '<span class="ts-chev">' + (open ? "&#9662;" : "&#9656;") + "</span>";
+    html += '<span class="ts-date">' + formatDateLabel(m.date) + "</span>";
+    html += '<span class="ts-opponent">vs ' + esc(m.opponent) + "</span>";
+    html += '<span class="ts-tag ' + badge.tone + '">' + badge.label + "</span>";
+    html += '<span class="ts-score">' + m.scoreUs + " &ndash; " + m.scoreThem + "</span>";
+    html += "</div>";
+    if (open) {
+      html += '<div class="ts-body">';
+      if (season.players.length === 0) {
+        html += '<div class="ts-empty">Voeg eerst spelers toe bij het tabblad Team.</div>';
+      } else {
+        html += '<div class="ts-row" style="margin-top:10px">';
+        html += '<div class="ts-field"><label>Datum</label><input type="date" value="' + m.date + '" data-bind=\'{"type":"matchField","entityId":"' + m.id + '","field":"date"}\'></div>';
+        html += '<div class="ts-field" style="flex:1;min-width:140px"><label>Tegenstander</label><input type="text" value="' + esc(m.opponent) + '" data-bind=\'{"type":"matchField","entityId":"' + m.id + '","field":"opponent"}\'></div>';
+        html += '<div class="ts-field"><label>Doelp. wij</label><input type="number" min="0" value="' + m.scoreUs + '" style="width:64px" data-bind=\'{"type":"matchField","entityId":"' + m.id + '","field":"scoreUs"}\'></div>';
+        html += '<div class="ts-field"><label>Doelp. zij</label><input type="number" min="0" value="' + m.scoreThem + '" style="width:64px" data-bind=\'{"type":"matchField","entityId":"' + m.id + '","field":"scoreThem"}\'></div>';
+        html += '<div class="ts-field"><label>Duur (min.)</label><input type="number" min="1" value="' + (m.duration || 90) + '" style="width:80px" data-bind=\'{"type":"matchField","entityId":"' + m.id + '","field":"duration"}\'></div>';
+        html += "</div>";
+
+        html += "<h3>Aanwezigheid</h3>" + attendanceRows(m, season, "match");
+
+        html += "<h3>Basisopstelling</h3>";
+        if (present.length === 0) html += '<div class="ts-muted">Geen aanwezige spelers.</div>';
+        present.forEach(function (p) {
+          var checked = (m.starters || []).indexOf(p.id) !== -1;
+          html += '<div class="ts-starter-row"><label><input type="checkbox" ' + (checked ? "checked" : "") + ' data-bind=\'{"type":"starter","entityId":"' + m.id + '","playerId":"' + p.id + '"}\'>' + (p.number ? "#" + esc(p.number) + " " : "") + esc(p.name) + "</label></div>";
+        });
+
+        html += "<h3>Wissels</h3>";
+        (m.subs || []).forEach(function (s) {
+          html += '<div class="ts-sub-row">';
+          html += '<div class="ts-field"><label>Minuut</label><input type="number" min="0" max="' + (m.duration || 90) + '" value="' + esc(s.minute) + '" data-bind=\'{"type":"subField","entityId":"' + m.id + '","subId":"' + s.id + '","field":"minute"}\'></div>';
+          html += '<div class="ts-field"><label>Speler uit</label><select data-bind=\'{"type":"subField","entityId":"' + m.id + '","subId":"' + s.id + '","field":"playerOut"}\'><option value="">Kies speler...</option>';
+          present.forEach(function (p) { html += '<option value="' + p.id + '"' + (s.playerOut === p.id ? " selected" : "") + ">" + (p.number ? "#" + esc(p.number) + " " : "") + esc(p.name) + "</option>"; });
+          html += "</select></div>";
+          html += '<div class="ts-field"><label>Speler in</label><select data-bind=\'{"type":"subField","entityId":"' + m.id + '","subId":"' + s.id + '","field":"playerIn"}\'><option value="">Kies speler...</option>';
+          present.forEach(function (p) { html += '<option value="' + p.id + '"' + (s.playerIn === p.id ? " selected" : "") + ">" + (p.number ? "#" + esc(p.number) + " " : "") + esc(p.name) + "</option>"; });
+          html += "</select></div>";
+          html += '<button class="ts-btn danger small" data-act="removeSub" data-payload=\'{"matchId":"' + m.id + '","subId":"' + s.id + '"}\'>Verwijder</button>';
+          html += "</div>";
+        });
+        html += '<button class="ts-btn secondary small" data-act="addSub" data-payload=\'{"matchId":"' + m.id + '"}\'' + (present.length === 0 ? " disabled" : "") + ">Wissel toevoegen</button>";
+
+        html += "<h3>Speelminuten, doelpunten en assists</h3>";
+        html += '<table class="ts-stat-table"><thead><tr><th>Speler</th><th>Minuten</th><th>Doelpunten</th><th>Assists</th></tr></thead><tbody>';
+        present.forEach(function (p) {
+          var ga = (m.goalsAssists && m.goalsAssists[p.id]) || { goals: 0, assists: 0 };
+          html += "<tr><td>" + (p.number ? "#" + esc(p.number) + " " : "") + esc(p.name) + "</td><td>" + (mins[p.id] || 0) + "</td>";
+          html += '<td><input type="number" min="0" value="' + (ga.goals || 0) + '" data-bind=\'{"type":"gaField","entityId":"' + m.id + '","playerId":"' + p.id + '","field":"goals"}\'></td>';
+          html += '<td><input type="number" min="0" value="' + (ga.assists || 0) + '" data-bind=\'{"type":"gaField","entityId":"' + m.id + '","playerId":"' + p.id + '","field":"assists"}\'></td></tr>';
+        });
+        html += "</tbody></table>";
+
+        html += '<div style="margin-top:14px"><button class="ts-btn danger" data-act="removeMatch" data-payload=\'{"id":"' + m.id + '"}\'>Wedstrijd verwijderen</button></div>';
+      }
+      html += "</div>";
+    }
+    html += "</div>";
+    return html;
+  }
+
+  function renderTrainingenTab(season) {
+    var html = "";
+    var upcoming = season.trainings.filter(function (t) { return t.date >= todayISO(); }).sort(function (a, b) { return a.date < b.date ? -1 : 1; })[0];
+    if (upcoming) {
+      var present = season.players.filter(function (p) { return isPresent(upcoming, p.id); }).length;
+      html += '<div class="ts-upcoming"><h3>Volgende training: ' + formatDateLabel(upcoming.date) + " om " + esc(upcoming.startTime) + '</h3>';
+      html += '<div class="ts-muted">' + present + " van " + season.players.length + " aanwezig</div></div>";
+    }
+
+    if (ui.calYear === null) { var now = new Date(); ui.calYear = now.getFullYear(); ui.calMonth = now.getMonth(); }
+    html += '<div class="ts-card">';
+    html += '<div class="ts-cal-nav"><button class="ts-btn secondary small" data-act="calPrev">&larr;</button><strong>' + monthName(ui.calMonth) + " " + ui.calYear + '</strong><button class="ts-btn secondary small" data-act="calNext">&rarr;</button></div>';
+    html += renderCalendar(season, ui.calYear, ui.calMonth);
+    html += "</div>";
+
+    if (ui.showNewTraining) {
+      html += '<div class="ts-card"><h2>Training toevoegen</h2><div class="ts-row">';
+      html += '<div class="ts-field"><label>Datum</label><input id="newTrainingDate" type="date" value="' + (ui.newTrainingDate || todayISO()) + '"></div>';
+      html += '<div class="ts-field"><label>Starttijd</label><input id="newTrainingTime" type="time" value="18:00"></div>';
+      html += '<button class="ts-btn" data-act="addTraining">Toevoegen</button>';
+      html += '<button class="ts-btn secondary" data-act="cancelNewTraining">Annuleren</button>';
+      html += "</div></div>";
+    }
+
+    var trainings = season.trainings.slice().sort(function (a, b) { return a.date < b.date ? 1 : -1; });
+    if (trainings.length === 0) html += '<div class="ts-empty">Nog geen trainingen ingepland. Klik op een datum in de kalender.</div>';
+    trainings.forEach(function (t) { html += renderTrainingCard(t, season); });
+    return html;
+  }
+
+  function monthName(m) {
+    return ["Januari","Februari","Maart","April","Mei","Juni","Juli","Augustus","September","Oktober","November","December"][m];
+  }
+
+  function renderCalendar(season, year, month) {
+    var first = new Date(year, month, 1);
+    var startWeekday = (first.getDay() + 6) % 7; // maandag = 0
+    var daysInMonth = new Date(year, month + 1, 0).getDate();
+    var byDate = {};
+    season.trainings.forEach(function (t) { byDate[t.date] = t; });
+
+    var html = '<table class="ts-cal"><thead><tr>';
+    ["Ma","Di","Wo","Do","Vr","Za","Zo"].forEach(function (d) { html += "<th>" + d + "</th>"; });
+    html += "</tr></thead><tbody><tr>";
+    var cell = 0;
+    for (var i = 0; i < startWeekday; i++) { html += '<td><div class="ts-cal-day empty"></div></td>'; cell++; }
+    for (var day = 1; day <= daysInMonth; day++) {
+      var iso = year + "-" + String(month + 1).padStart(2, "0") + "-" + String(day).padStart(2, "0");
+      var has = !!byDate[iso];
+      html += '<td><div class="ts-cal-day' + (has ? " has-training" : "") + '" data-act="calDayClick" data-payload=\'{"date":"' + iso + '"' + (has ? ',"trainingId":"' + byDate[iso].id + '"' : "") + '}\'>' + day + "</div></td>";
+      cell++;
+      if (cell % 7 === 0) html += "</tr><tr>";
+    }
+    while (cell % 7 !== 0) { html += '<td><div class="ts-cal-day empty"></div></td>'; cell++; }
+    html += "</tr></tbody></table>";
+    return html;
+  }
+
+  function renderTrainingCard(t, season) {
+    var open = ui.openTrainingId === t.id;
+    var totalDur = (t.blocks || []).reduce(function (sum, b) { return sum + (Number(b.duration) || 0); }, 0);
+    var endTime = addMinutesToTime(t.startTime, totalDur);
+    var present = season.players.filter(function (p) { return isPresent(t, p.id); }).length;
+    var html = '<div class="ts-training">';
+    html += '<div class="ts-training-head" data-act="toggleTraining" data-payload=\'{"id":"' + t.id + '"}\'>';
+    html += '<span class="ts-chev">' + (open ? "&#9662;" : "&#9656;") + "</span>";
+    html += '<span class="ts-date">' + formatDateLabel(t.date) + "</span>";
+    html += '<span class="ts-opponent">' + esc(t.startTime) + " - " + endTime + " (" + totalDur + " min.)</span>";
+    html += '<span class="ts-muted">' + present + "/" + season.players.length + " aanwezig</span>";
+    html += "</div>";
+    if (open) {
+      html += '<div class="ts-body">';
+      if (season.players.length === 0) {
+        html += '<div class="ts-empty">Voeg eerst spelers toe bij het tabblad Team.</div>';
+      } else {
+        html += '<div class="ts-row" style="margin-top:10px">';
+        html += '<div class="ts-field"><label>Datum</label><input type="date" value="' + t.date + '" data-bind=\'{"type":"trainingField","entityId":"' + t.id + '","field":"date"}\'></div>';
+        html += '<div class="ts-field"><label>Starttijd</label><input type="time" value="' + esc(t.startTime) + '" data-bind=\'{"type":"trainingField","entityId":"' + t.id + '","field":"startTime"}\'></div>';
+        html += "</div>";
+
+        html += "<h3>Aanwezigheid</h3>" + attendanceRows(t, season, "training");
+
+        html += "<h3>Trainingsonderdelen</h3>";
+        var cursor = 0;
+        (t.blocks || []).forEach(function (b) {
+          var s = addMinutesToTime(t.startTime, cursor);
+          cursor += Number(b.duration) || 0;
+          var e = addMinutesToTime(t.startTime, cursor);
+          html += '<div class="ts-block-row">';
+          html += '<div class="ts-field"><label>Duur (min.) &middot; ' + s + '-' + e + '</label><input type="number" min="1" value="' + esc(b.duration) + '" data-bind=\'{"type":"blockField","entityId":"' + t.id + '","blockId":"' + b.id + '","field":"duration"}\'></div>';
+          html += '<div class="ts-field" style="flex:1"><label>Omschrijving</label><input type="text" value="' + esc(b.text) + '" placeholder="bijv. partijvorm 4v4" data-bind=\'{"type":"blockField","entityId":"' + t.id + '","blockId":"' + b.id + '","field":"text"}\'></div>';
+          html += '<button class="ts-btn danger small" data-act="removeBlock" data-payload=\'{"trainingId":"' + t.id + '","blockId":"' + b.id + '"}\'>Verwijder</button>';
+          html += "</div>";
+        });
+        html += '<button class="ts-btn secondary small" data-act="addBlock" data-payload=\'{"trainingId":"' + t.id + '"}\'>Onderdeel toevoegen</button>';
+
+        html += '<div style="margin-top:14px"><button class="ts-btn danger" data-act="removeTraining" data-payload=\'{"id":"' + t.id + '"}\'>Training verwijderen</button></div>';
+      }
+      html += "</div>";
+    }
+    html += "</div>";
+    return html;
+  }
+
+  function renderStatistiekenTab(season) {
+    var stats = seasonStats(season);
+    if (season.matches.length === 0 && season.trainings.length === 0) {
+      return '<div class="ts-empty">Nog geen wedstrijden of trainingen ingevoerd — statistieken verschijnen hier zodra er data is.</div>';
+    }
+    var topScorers = stats.filter(function (s) { return s.goals > 0; }).sort(function (a, b) { return b.goals - a.goals; }).slice(0, 5);
+    var topAssists = stats.filter(function (s) { return s.assists > 0; }).sort(function (a, b) { return b.assists - a.assists; }).slice(0, 5);
+    var sortKey = ui.statSort || "goals";
+    var sorted = stats.slice().sort(function (a, b) {
+      if (sortKey === "name") return a.name.localeCompare(b.name);
+      return (b[sortKey] || 0) - (a[sortKey] || 0);
+    });
+    var cols = [["name","Speler"],["matches","Wedstr."],["minutes","Minuten"],["goals","Doelp."],["assists","Assists"],["matchAbsent","Afw. wedstr."],["trainings","Training"],["trainingAbsent","Afw. train."]];
+
+    var html = '<div class="ts-lead-grid">';
+    html += '<div class="ts-card" style="margin:0"><h2>Topscorers</h2>';
+    if (topScorers.length === 0) html += '<div class="ts-empty">Nog geen doelpunten.</div>';
+    topScorers.forEach(function (s) { html += '<div class="ts-lead-item"><span>' + esc(s.name) + '</span><span class="ts-lead-val">' + s.goals + "</span></div>"; });
+    html += "</div>";
+    html += '<div class="ts-card" style="margin:0"><h2>Meeste assists</h2>';
+    if (topAssists.length === 0) html += '<div class="ts-empty">Nog geen assists.</div>';
+    topAssists.forEach(function (s) { html += '<div class="ts-lead-item"><span>' + esc(s.name) + '</span><span class="ts-lead-val">' + s.assists + "</span></div>"; });
+    html += "</div></div>";
+
+    html += '<div class="ts-card"><h2>Volledig overzicht seizoen</h2><table class="ts-full-table"><thead><tr>';
+    cols.forEach(function (c) {
+      html += '<th class="' + (sortKey === c[0] ? "active" : "") + '" data-act="setStatSort" data-payload=\'{"key":"' + c[0] + '"}\'' + (c[0] !== "name" ? ' style="text-align:right"' : "") + ">" + c[1] + "</th>";
+    });
+    html += "</tr></thead><tbody>";
+    sorted.forEach(function (s) {
+      html += "<tr><td>" + (s.number ? "#" + esc(s.number) + " " : "") + esc(s.name) + "</td>";
+      html += '<td class="ts-num">' + s.matches + '</td><td class="ts-num">' + s.minutes + '</td><td class="ts-num">' + s.goals + '</td><td class="ts-num">' + s.assists + '</td><td class="ts-num">' + s.matchAbsent + '</td><td class="ts-num">' + s.trainings + '</td><td class="ts-num">' + s.trainingAbsent + "</td></tr>";
+    });
+    html += "</tbody></table></div>";
+    return html;
+  }
+
+  // ---------- mutations ----------
+  function newSeasonObj(name) {
+    return { id: uid(), name: name, createdAt: new Date().toISOString(), players: [], matches: [], trainings: [] };
+  }
+  function findMatch(season, id) { return season.matches.find(function (m) { return m.id === id; }); }
+  function findTraining(season, id) { return season.trainings.find(function (t) { return t.id === id; }); }
+  function findPlayer(season, id) { return season.players.find(function (p) { return p.id === id; }); }
+
+  function setAttendance(entity, playerId, present, reason, customReason) {
+    entity.attendance = entity.attendance || {};
+    entity.attendance[playerId] = present ? { present: true } : { present: false, reason: reason || "", customReason: customReason || "" };
+    if (!present && entity.starters) entity.starters = entity.starters.filter(function (id) { return id !== playerId; });
+    if (!present && entity.subs) entity.subs = entity.subs.filter(function (s) { return s.playerOut !== playerId && s.playerIn !== playerId; });
+  }
+
+  // ---------- event handling ----------
+  function getPayload(el) {
+    try { return JSON.parse(el.getAttribute("data-payload") || "{}"); } catch (e) { return {}; }
+  }
+  function getBind(el) {
+    try { return JSON.parse(el.getAttribute("data-bind") || "{}"); } catch (e) { return {}; }
+  }
+
+  app.addEventListener("click", function (e) {
+    var el = e.target.closest("[data-act]");
+    if (!el) return;
+    e.preventDefault();
+    var act = el.getAttribute("data-act");
+    var p = getPayload(el);
+    var season = activeSeason();
+
+    if (act === "openNewSeason") { ui.showNewSeason = true; render(); }
+    else if (act === "cancelNewSeason") { ui.showNewSeason = false; ui.errors.season = null; render(); }
+    else if (act === "createSeason") {
+      var name = (document.getElementById("newSeasonName").value || "").trim();
+      if (!name) { ui.errors.season = "Vul een naam in."; render(); return; }
+      var s = newSeasonObj(name);
+      state.seasons.push(s);
+      state.activeSeasonId = s.id;
+      ui.showNewSeason = false; ui.errors.season = null; ui.tab = "team";
+      persist(); render();
+    }
+    else if (act === "openSeason") { state.activeSeasonId = p.id; ui.tab = "team"; render(); }
+    else if (act === "renameSeason") {
+      var target = state.seasons.find(function (s) { return s.id === p.id; });
+      var newName = prompt("Nieuwe naam voor dit seizoen:", target.name);
+      if (newName && newName.trim()) { target.name = newName.trim(); persist(); render(); }
+    }
+    else if (act === "deleteSeason") {
+      var t2 = state.seasons.find(function (s) { return s.id === p.id; });
+      if (confirm('Seizoen "' + t2.name + '" en alle bijbehorende data verwijderen? Dit kan niet ongedaan gemaakt worden.')) {
+        state.seasons = state.seasons.filter(function (s) { return s.id !== p.id; });
+        if (state.activeSeasonId === p.id) state.activeSeasonId = null;
+        persist(); render();
+      }
+    }
+    else if (act === "backToSeasons") { state.activeSeasonId = null; render(); }
+    else if (act === "setTab") { ui.tab = p.tab; render(); }
+    else if (act === "exportBackup") { exportBackup(); }
+    else if (act === "importBackup") { document.getElementById("importFile").click(); }
+
+    else if (act === "addPlayer") {
+      var nameEl = document.getElementById("newPlayerName"), numEl = document.getElementById("newPlayerNum");
+      var nm = (nameEl.value || "").trim();
+      if (!nm) { ui.errors.player = "Vul een naam in."; render(); return; }
+      season.players.push({ id: uid(), name: nm, number: (numEl.value || "").trim(), notes: [] });
+      ui.errors.player = null;
+      persist(); render();
+    }
+    else if (act === "removePlayer") {
+      season.players = season.players.filter(function (pl) { return pl.id !== p.id; });
+      season.matches.forEach(function (m) {
+        m.starters = (m.starters || []).filter(function (id) { return id !== p.id; });
+        m.subs = (m.subs || []).filter(function (s) { return s.playerOut !== p.id && s.playerIn !== p.id; });
+        if (m.attendance) delete m.attendance[p.id];
+        if (m.goalsAssists) delete m.goalsAssists[p.id];
+      });
+      season.trainings.forEach(function (t) { if (t.attendance) delete t.attendance[p.id]; });
+      persist(); render();
+    }
+    else if (act === "togglePlayer") { ui.openPlayerId = ui.openPlayerId === p.id ? null : p.id; render(); }
+    else if (act === "addNote") {
+      var pl = findPlayer(season, p.id);
+      var txt = document.getElementById("noteText-" + p.id).value.trim();
+      if (!txt) return;
+      pl.notes = pl.notes || [];
+      pl.notes.push({ id: uid(), date: todayISO(), text: txt });
+      persist(); render();
+    }
+    else if (act === "removeNote") {
+      var pl2 = findPlayer(season, p.playerId);
+      pl2.notes = (pl2.notes || []).filter(function (n) { return n.id !== p.noteId; });
+      persist(); render();
+    }
+
+    else if (act === "toggleNewMatch") { ui.showNewMatch = !ui.showNewMatch; ui.errors.match = null; render(); }
+    else if (act === "addMatch") {
+      var d = document.getElementById("newMatchDate").value;
+      var opp = document.getElementById("newMatchOpp").value.trim();
+      if (!d || !opp) { ui.errors.match = "Vul een datum en tegenstander in."; render(); return; }
+      var m2 = {
+        id: uid(), date: d, opponent: opp,
+        scoreUs: Number(document.getElementById("newMatchUs").value) || 0,
+        scoreThem: Number(document.getElementById("newMatchThem").value) || 0,
+        duration: 90, attendance: {}, starters: [], subs: [], goalsAssists: {}
+      };
+      season.matches.push(m2);
+      ui.showNewMatch = false; ui.errors.match = null; ui.openMatchId = m2.id;
+      persist(); render();
+    }
+    else if (act === "toggleMatch") { ui.openMatchId = ui.openMatchId === p.id ? null : p.id; render(); }
+    else if (act === "removeMatch") {
+      if (confirm("Deze wedstrijd verwijderen?")) { season.matches = season.matches.filter(function (m) { return m.id !== p.id; }); persist(); render(); }
+    }
+    else if (act === "addSub") {
+      var m3 = findMatch(season, p.matchId);
+      m3.subs = m3.subs || [];
+      m3.subs.push({ id: uid(), minute: "", playerOut: "", playerIn: "" });
+      persist(); render();
+    }
+    else if (act === "removeSub") {
+      var m4 = findMatch(season, p.matchId);
+      m4.subs = (m4.subs || []).filter(function (s) { return s.id !== p.subId; });
+      persist(); render();
+    }
+
+    else if (act === "calPrev") { ui.calMonth--; if (ui.calMonth < 0) { ui.calMonth = 11; ui.calYear--; } render(); }
+    else if (act === "calNext") { ui.calMonth++; if (ui.calMonth > 11) { ui.calMonth = 0; ui.calYear++; } render(); }
+    else if (act === "calDayClick") {
+      if (p.trainingId) { ui.openTrainingId = p.trainingId; render(); }
+      else { ui.showNewTraining = true; ui.newTrainingDate = p.date; render(); }
+    }
+    else if (act === "cancelNewTraining") { ui.showNewTraining = false; render(); }
+    else if (act === "addTraining") {
+      var td = document.getElementById("newTrainingDate").value;
+      var tt = document.getElementById("newTrainingTime").value || "18:00";
+      if (!td) return;
+      var t3 = { id: uid(), date: td, startTime: tt, blocks: [], attendance: {} };
+      season.trainings.push(t3);
+      ui.showNewTraining = false; ui.openTrainingId = t3.id;
+      persist(); render();
+    }
+    else if (act === "toggleTraining") { ui.openTrainingId = ui.openTrainingId === p.id ? null : p.id; render(); }
+    else if (act === "removeTraining") {
+      if (confirm("Deze training verwijderen?")) { season.trainings = season.trainings.filter(function (t) { return t.id !== p.id; }); persist(); render(); }
+    }
+    else if (act === "addBlock") {
+      var t4 = findTraining(season, p.trainingId);
+      t4.blocks = t4.blocks || [];
+      t4.blocks.push({ id: uid(), duration: 10, text: "" });
+      persist(); render();
+    }
+    else if (act === "removeBlock") {
+      var t5 = findTraining(season, p.trainingId);
+      t5.blocks = (t5.blocks || []).filter(function (b) { return b.id !== p.blockId; });
+      persist(); render();
+    }
+    else if (act === "setStatSort") { ui.statSort = p.key; render(); }
+  });
+
+  app.addEventListener("change", function (e) {
+    var el = e.target.closest("[data-bind]");
+    if (!el) return;
+    var b = getBind(el);
+    var season = activeSeason();
+    if (!season) return;
+
+    if (b.type === "switchSeason") { state.activeSeasonId = el.value; ui.tab = "team"; render(); return; }
+
+    if (b.type === "attendance") {
+      var entity = b.kind === "match" ? findMatch(season, b.entityId) : findTraining(season, b.entityId);
+      var prevAbs = absenceInfo(entity, b.playerId);
+      setAttendance(entity, b.playerId, el.checked, prevAbs ? prevAbs.reason : "", prevAbs ? prevAbs.customReason : "");
+      persist(); render(); return;
+    }
+    if (b.type === "attendanceReason" || b.type === "attendanceCustom") {
+      var entity2 = b.kind === "match" ? findMatch(season, b.entityId) : findTraining(season, b.entityId);
+      var abs2 = absenceInfo(entity2, b.playerId) || { reason: "", customReason: "" };
+      var reason = b.type === "attendanceReason" ? el.value : abs2.reason;
+      var custom = b.type === "attendanceCustom" ? el.value : abs2.customReason;
+      setAttendance(entity2, b.playerId, false, reason, custom);
+      persist(); render(); return;
+    }
+    if (b.type === "matchField") {
+      var m = findMatch(season, b.entityId);
+      if (b.field === "scoreUs" || b.field === "scoreThem" || b.field === "duration") m[b.field] = Number(el.value) || 0;
+      else m[b.field] = el.value;
+      persist(); render(); return;
+    }
+    if (b.type === "starter") {
+      var m2 = findMatch(season, b.entityId);
+      m2.starters = m2.starters || [];
+      var idx = m2.starters.indexOf(b.playerId);
+      if (el.checked && idx === -1) m2.starters.push(b.playerId);
+      if (!el.checked && idx !== -1) m2.starters.splice(idx, 1);
+      persist(); render(); return;
+    }
+    if (b.type === "subField") {
+      var m3 = findMatch(season, b.entityId);
+      var sub = (m3.subs || []).find(function (s) { return s.id === b.subId; });
+      sub[b.field] = b.field === "minute" ? el.value : el.value;
+      persist(); render(); return;
+    }
+    if (b.type === "gaField") {
+      var m4 = findMatch(season, b.entityId);
+      m4.goalsAssists = m4.goalsAssists || {};
+      var cur = m4.goalsAssists[b.playerId] || { goals: 0, assists: 0 };
+      cur[b.field] = Math.max(0, Number(el.value) || 0);
+      m4.goalsAssists[b.playerId] = cur;
+      persist(); render(); return;
+    }
+    if (b.type === "trainingField") {
+      var t = findTraining(season, b.entityId);
+      t[b.field] = el.value;
+      persist(); render(); return;
+    }
+    if (b.type === "blockField") {
+      var t2 = findTraining(season, b.entityId);
+      var blk = (t2.blocks || []).find(function (bl) { return bl.id === b.blockId; });
+      blk[b.field] = b.field === "duration" ? (Number(el.value) || 1) : el.value;
+      persist(); render(); return;
+    }
+  });
+
+  // ---------- backup ----------
+  function exportBackup() {
+    var blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "teambeheer-backup-" + todayISO() + ".json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+  document.getElementById("importFile").addEventListener("change", function (e) {
+    var file = e.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function () {
+      try {
+        var parsed = JSON.parse(reader.result);
+        if (!parsed || !Array.isArray(parsed.seasons)) throw new Error("ongeldig formaat");
+        if (confirm("Huidige data vervangen door deze backup? Dit kan niet ongedaan gemaakt worden.")) {
+          state = parsed;
+          persist(); render();
+        }
+      } catch (err) {
+        alert("Kon dit bestand niet inlezen als backup: " + err.message);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
